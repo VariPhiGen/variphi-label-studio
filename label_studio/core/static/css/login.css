@@ -50,7 +50,7 @@ html, body {
 
 .login_page_new_ui .left .logo_humansignal{
   position: absolute;
-  bottom: 60px;
+  bottom: 80px;
   left: 60px;
   display: flex;
   flex-direction: column;

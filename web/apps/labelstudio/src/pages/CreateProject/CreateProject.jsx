@@ -48,7 +48,9 @@ const ProjectName = ({ name, setName, onSaveName, onSubmit, error, description, 
           onChange={(e) => setDescription(e.target.value)}
         />
       </div>
-      {isFF(FF_LSDV_E_297) && (
+
+
+      {/* {isFF(FF_LSDV_E_297) && (
         <div className="field field--wide">
           <label>
             Workspace
@@ -73,7 +75,7 @@ const ProjectName = ({ name, setName, onSaveName, onSubmit, error, description, 
           </Caption>
           <HeidiTips collection="projectCreation" />
         </div>
-      )}
+      )} */}
     </form>
   );
 
