@@ -45,9 +45,10 @@ services:
       - ./mydata:/label-studio/data:rw
     command: bash -c "
       mkdir -p /label-studio/data/media && 
-      chown -R 1001:1001 /label-studio/data/media && 
-      chmod -R 755 /label-studio/data/media &&
+      chown -R 1001:1001 /label-studio/data &&
+      chmod -R 755 /label-studio/data &&
       label-studio-uwsgi"
+   
 
   db:
     image: pgautoupgrade/pgautoupgrade:13-alpine
