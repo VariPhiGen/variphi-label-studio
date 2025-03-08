@@ -11,7 +11,10 @@ from tasks.models import PredictionMeta
 class ModelProviders(models.TextChoices):
     OPENAI = 'OpenAI', _('OpenAI')
     AZURE_OPENAI = 'AzureOpenAI', _('AzureOpenAI')
+    AZURE_AI_FOUNDRY = 'AzureAIFoundry', _('AzureAIFoundry')
     VERTEX_AI = 'VertexAI', _('VertexAI')
+    GEMINI = 'Gemini', _('Gemini')
+    ANTHROPIC = 'Anthropic', _('Anthropic')
     CUSTOM = 'Custom', _('Custom')
 
 

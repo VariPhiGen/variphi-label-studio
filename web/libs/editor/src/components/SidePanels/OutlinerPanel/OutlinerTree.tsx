@@ -1,5 +1,5 @@
 import chroma from "chroma-js";
-import { observer } from "mobx-react";
+import { inject, observer } from "mobx-react";
 import Tree from "rc-tree";
 import {
   createContext,
@@ -25,11 +25,11 @@ import { flatten, isDefined, isMacOS } from "../../../utils/utilities";
 import { NodeIcon } from "../../Node/Node";
 import { LockButton } from "../Components/LockButton";
 import { RegionControlButton } from "../Components/RegionControlButton";
+import { RegionContextMenu } from "../Components/RegionContextMenu";
 import "./TreeView.scss";
 import ResizeObserver from "../../../utils/resize-observer";
 import type { EventDataNode, Key } from "rc-tree/es/interface";
 import { RegionLabel } from "./RegionLabel";
-
 const { localStorage } = window;
 const localStoreName = "collapsed-label-pos";
 const MIN_REGIONS_TREE_ROW_HEIGHT = 34;
@@ -148,7 +148,7 @@ const OutlinerInnerTreeComponent: FC<OutlinerInnerTreeProps> = observer(({ regio
       regionsTree.filter((item: any) => !collapsedPos.includes(item.pos)).map((item: any) => item.key) ?? [];
 
     onExpand = (
-      internalExpandedKeys: Key[],
+      _internalExpandedKeys: Key[],
       {
         node,
       }: {
@@ -208,14 +208,6 @@ const useDataTree = ({ regions, rootClass, footer }: any) => {
     const mods: Record<string, any> = { hidden, type, isDrawing };
 
     const label = <RegionLabel item={item} />;
-
-    // The only source of truth for region indices is here, where they are coming from different
-    // RegionStore methods and just rendered a second later; so we store them in a region
-    // to render in other places as well, so indices will be consistent across the app.
-    // Also `item` here can be a tool or a label when we use groupping, so only add idx to regions.
-    // It can even be undefined for group titles in Labels mode.
-    // Later in this file we render (idx + 1), so we will set it as (idx + 1) to incapsulate this logic.
-    item?.setRegionIndex?.(idx + 1);
 
     return {
       idx,
@@ -471,8 +463,14 @@ interface RegionControlsProps {
   toggleCollapsed: (e: any) => void;
 }
 
-const RegionControls: FC<RegionControlsProps> = observer(
-  ({ hovered, item, entity, collapsed, regions, hasControls, type, toggleCollapsed }) => {
+const injector = inject(({ store }) => {
+  return {
+    store,
+  };
+});
+
+const RegionControls: FC<RegionControlsProps> = injector(
+  observer(({ hovered, item, entity, collapsed, regions, hasControls, type, toggleCollapsed, store }) => {
     const { regions: regionStore } = useContext(OutlinerContext);
 
     const hidden = useMemo(() => {
@@ -533,6 +531,11 @@ const RegionControls: FC<RegionControlsProps> = observer(
           </>
         )}
         <Elem name={"wrapper"}>
+          {store.hasInterface("annotations:copy-link") && isDefined(item?.annotation?.pk) && (
+            <Elem name="control" mod={{ type: "menu" }}>
+              <RegionContextMenu item={item} />
+            </Elem>
+          )}
           <Elem name="control" mod={{ type: "lock" }}>
             <LockButton
               item={item}
@@ -567,7 +570,7 @@ const RegionControls: FC<RegionControlsProps> = observer(
         </Elem>
       </Elem>
     );
-  },
+  }),
 );
 
 interface RegionItemOCSProps {

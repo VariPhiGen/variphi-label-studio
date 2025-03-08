@@ -1,7 +1,7 @@
 import chroma from "chroma-js";
 import { observer } from "mobx-react";
 import { type FC, useMemo, useState } from "react";
-import { IconLink, IconPlusAlt, IconTrash, IconWarning } from "../../../assets/icons";
+import { IconRelationLink, IconPlusAlt, IconTrash, IconWarning } from "../../../assets/icons";
 import { IconEyeClosed, IconEyeOpened } from "../../../assets/icons/timeline";
 import { Button, type ButtonProps } from "../../../common/Button/Button";
 import { CREATE_RELATION_MODE } from "../../../stores/Annotation/LinkingModes";
@@ -49,6 +49,11 @@ export const RegionItem: FC<RegionItemProps> = observer(
             <Elem name="icon">
               <NodeIcon node={region} />
             </Elem>
+            <Elem name="index">
+              <Elem tag="span" name="index_value">
+                {region.region_index}
+              </Elem>
+            </Elem>
             <RegionLabels region={region} />
           </Elem>
           {withIds && <span>{region.cleanId}</span>}
@@ -94,7 +99,7 @@ const RegionAction: FC<any> = observer(({ region, annotation, editMode, onEditMo
   entityButtons.push(
     <RegionActionButton
       key="relation"
-      icon={<IconLink />}
+      icon={<IconRelationLink />}
       primary={annotation.isLinkingMode}
       onClick={(_e: any, hotkey?: any) => {
         // If this is triggered by a hotkey, defer to the global bound handler for relations to avoid contention.

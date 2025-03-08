@@ -169,7 +169,7 @@ module.exports = composePlugins(
 
           // we also don't need css modules as these are used directly
           // in the code and don't need prefixing
-          if (testString.match(/module/)) return false;
+          if (testString.match(/module|raw/)) return false;
 
           // we only target pre-processors that has 'css-loader included'
           return testString.match(/scss|sass/) && r.use.some((u) => u.loader && u.loader.includes("css-loader"));
@@ -193,6 +193,10 @@ module.exports = composePlugins(
             };
           }
         });
+      }
+
+      if (testString.includes(".css")) {
+        rule.exclude = /tailwind\.css/;
       }
     });
 
@@ -222,6 +226,21 @@ module.exports = composePlugins(
         options: {
           name: "[name].[ext]",
         },
+      },
+      // tailwindcss
+      {
+        test: /tailwind\.css/,
+        exclude: /node_modules/,
+        use: [
+          "style-loader",
+          {
+            loader: "css-loader",
+            options: {
+              importLoaders: 1,
+            },
+          },
+          "postcss-loader",
+        ],
       },
     );
 
@@ -264,15 +283,18 @@ module.exports = composePlugins(
                 publicPath: `${FRONTEND_HOSTNAME}/react-app/`,
               },
               allowedHosts: "all", // Allow access from Django's server
-              proxy: [
-                {
-                  context: ["/api"],
-                  target: DJANGO_HOSTNAME,
+              proxy: {
+                "/api": {
+                  target: `${DJANGO_HOSTNAME}/api`,
+                  changeOrigin: true,
+                  pathRewrite: { "^/api": "" },
+                  secure: false,
                 },
-              ],
-              historyApiFallback: {
-                index: "/index.html",
-                disableDotRule: true,
+                "/": {
+                  target: `${DJANGO_HOSTNAME}`,
+                  changeOrigin: true,
+                  secure: false,
+                },
               },
             },
     });
