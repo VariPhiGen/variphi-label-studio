@@ -33,6 +33,7 @@ services:
       - "8000"
     depends_on:
       - db
+
     environment:
       - DJANGO_DB=default
       - POSTGRE_NAME=postgres
@@ -43,7 +44,7 @@ services:
       - LABEL_STUDIO_HOST=${LABEL_STUDIO_HOST:-}
       - JSON_LOG=1
       - CSRF_TRUSTED_ORIGINS=https://annotation-studio.variphi.com
-      - GOOGLE_APPLICATION_CREDENTIALS=./service-account.json 
+      - ./service-account.json:/label-studio/service-account.json:ro
     #      - LOG_LEVEL=DEBUG
     volumes:
       - ./mydata:/label-studio/data:rw
