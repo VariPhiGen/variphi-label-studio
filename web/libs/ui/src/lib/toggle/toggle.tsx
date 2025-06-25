@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useMemo, useState } from "react";
+import { forwardRef, useCallback, useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
 import { Label } from "@humansignal/ui";
 import styles from "./toggle.module.scss";
@@ -6,18 +6,18 @@ import styles from "./toggle.module.scss";
 type ToggleProps = {
   className?: string;
   label?: string;
-  labelProps: any;
+  labelProps?: Partial<React.ComponentProps<typeof Label>>;
   description?: string;
   checked?: boolean;
   defaultChecked?: boolean;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   required?: boolean;
-  style: any;
+  style?: React.CSSProperties;
   disabled?: boolean;
   alwaysBlue?: boolean;
 };
 
-export const Toggle = forwardRef(
+export const Toggle = forwardRef<HTMLInputElement, ToggleProps>(
   (
     {
       className,
@@ -31,7 +31,7 @@ export const Toggle = forwardRef(
       style,
       alwaysBlue,
       ...props
-    }: ToggleProps,
+    },
     ref,
   ) => {
     const initialChecked = useMemo(() => defaultChecked ?? checked ?? false, [defaultChecked, checked]);
@@ -39,6 +39,16 @@ export const Toggle = forwardRef(
     useEffect(() => {
       setIsChecked(initialChecked);
     }, [initialChecked]);
+
+    const onChangeHandler = useCallback(
+      (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (typeof checked === "undefined") {
+          setIsChecked(e.target.checked);
+        }
+        onChange?.(e);
+      },
+      [onChange, checked],
+    );
 
     const formField = (
       <div
@@ -59,17 +69,21 @@ export const Toggle = forwardRef(
           className={clsx(styles.toggle__input)}
           type="checkbox"
           checked={isChecked}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-            setIsChecked(e.target.checked);
-            onChange?.(e);
-          }}
+          onChange={onChangeHandler}
         />
         <span className={clsx(styles.toggle__indicator)} />
       </div>
     );
 
     return label ? (
-      <Label placement="right" required={required} text={label} description={description} {...(labelProps ?? {})}>
+      <Label
+        placement="right"
+        required={required}
+        text={label}
+        description={description}
+        className="gap-2"
+        {...(labelProps ?? {})}
+      >
         {formField}
       </Label>
     ) : (

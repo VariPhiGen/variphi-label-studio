@@ -14,25 +14,20 @@ import { RoutesProvider } from "../providers/RoutesProvider";
 import { DRAFT_GUARD_KEY, DraftGuard, draftGuardCallback } from "../components/DraftGuard/DraftGuard";
 import { AsyncPage } from "./AsyncPage/AsyncPage";
 import ErrorBoundary from "./ErrorBoundary";
-import { FF_OPTIC_2, FF_UNSAVED_CHANGES, FF_PRODUCT_TOUR, isFF } from "../utils/feature-flags";
+import { FF_UNSAVED_CHANGES, isFF } from "../utils/feature-flags";
 import { TourProvider } from "@humansignal/core";
 import { ToastProvider, ToastViewport } from "@humansignal/ui";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { JotaiProvider, JotaiStore } from "../utils/jotai-store";
 import { CurrentUserProvider } from "../providers/CurrentUser";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "@humansignal/core/lib/utils/query-client";
 import { RootPage } from "./RootPage";
+import { ff } from "@humansignal/core";
 import "@humansignal/ui/src/tailwind.css";
 import "./App.scss";
 
 const baseURL = new URL(APP_SETTINGS.hostname || location.origin);
 export const UNBLOCK_HISTORY_MESSAGE = "UNBLOCK_HISTORY";
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-    },
-  },
-});
 
 const browserHistory = createBrowserHistory({
   basename: baseURL.pathname || "/",
@@ -47,7 +42,7 @@ const browserHistory = createBrowserHistory({
       callback(result);
       isFF(FF_UNSAVED_CHANGES) && window.postMessage({ source: "label-studio", payload: UNBLOCK_HISTORY_MESSAGE });
     };
-    if (isFF(FF_OPTIC_2) && message === DRAFT_GUARD_KEY) {
+    if (message === DRAFT_GUARD_KEY) {
       draftGuardCallback.current = callbackWrapper;
     } else if (isFF(FF_UNSAVED_CHANGES) && message === LEAVE_BLOCKER_KEY) {
       leaveBlockerCallback.current = callbackWrapper;
@@ -67,16 +62,16 @@ const App = ({ content }) => {
       <Router history={browserHistory}>
         <MultiProvider
           providers={[
+            <QueryClientProvider client={queryClient} key="query" />,
             <JotaiProvider key="jotai" store={JotaiStore} />,
-            <QueryClientProvider key="query" client={queryClient} />,
             <AppStoreProvider key="app-store" />,
+            <ToastProvider key="toast" />,
             <ApiProvider key="api" />,
             <ConfigProvider key="config" />,
             <RoutesProvider key="rotes" />,
             <ProjectProvider key="project" />,
-            <ToastProvider key="toast" />,
             <CurrentUserProvider key="current-user" />,
-            isFF(FF_PRODUCT_TOUR) && <TourProvider useAPI={useAPI} />,
+            ff.isActive(ff.FF_PRODUCT_TOUR) && <TourProvider useAPI={useAPI} />,
           ].filter(Boolean)}
         >
           <AsyncPage>

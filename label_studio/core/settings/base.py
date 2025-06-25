@@ -231,6 +231,7 @@ INSTALLED_APPS = [
     'ml_models',
     'ml_model_providers',
     'jwt_auth',
+    'session_policy',
 ]
 
 MIDDLEWARE = [
@@ -275,7 +276,15 @@ INTERNAL_IPS = [  # django debug toolbar for django==2.2 requirement
     '127.0.0.1',
     'localhost',
 ]
-CORS_ORIGIN_ALLOW_ALL = True
+
+# Typical secure configuration is simply set CORS_ALLOW_ALL_ORIGINS = False in the env
+if allowed_origins := get_env_list('CORS_ALLOWED_ORIGINS'):
+    CORS_ALLOWED_ORIGINS = allowed_origins
+elif allowed_origin_regexes := get_env_list('CORS_ALLOWED_ORIGIN_REGEXES'):
+    CORS_ALLOWED_ORIGIN_REGEXES = allowed_origin_regexes
+else:
+    CORS_ALLOW_ALL_ORIGINS = get_bool_env('CORS_ALLOW_ALL_ORIGINS', True)
+
 CORS_ALLOW_METHODS = [
     'DELETE',
     'GET',
@@ -388,16 +397,14 @@ SENTRY_REDIS_ENABLED = False
 FRONTEND_SENTRY_DSN = get_env('FRONTEND_SENTRY_DSN', None)
 FRONTEND_SENTRY_RATE = get_env('FRONTEND_SENTRY_RATE', 0.01)
 FRONTEND_SENTRY_ENVIRONMENT = get_env('FRONTEND_SENTRY_ENVIRONMENT', 'stage.opensource')
+
+# Exceptions that should not be logged to Sentry and aren't children of drf's APIException class
 SENTRY_IGNORED_EXCEPTIONS = [
     'Http404',
-    'NotAuthenticated',
-    'AuthenticationFailed',
-    'NotFound',
     'XMLSyntaxError',
     'FileUpload.DoesNotExist',
     'Forbidden',
     'KeyboardInterrupt',
-    'PermissionDenied',
 ]
 
 ROOT_URLCONF = 'core.urls'
@@ -488,6 +495,7 @@ SUPPORTED_EXTENSIONS = set(
         '.mp4',
         '.webm',
         '.webp',
+        '.pdf',
     ]
 )
 
@@ -579,6 +587,7 @@ DATA_MANAGER_ANNOTATIONS_MAP = {}
 DATA_MANAGER_ACTIONS = {}
 DATA_MANAGER_CUSTOM_FILTER_EXPRESSIONS = 'data_manager.functions.custom_filter_expressions'
 DATA_MANAGER_PREPROCESS_FILTER = 'data_manager.functions.preprocess_filter'
+BULK_UPDATE_IS_LABELED = 'tasks.functions.bulk_update_is_labeled_by_overlap'
 USER_LOGIN_FORM = 'users.forms.LoginForm'
 PROJECT_MIXIN = 'projects.mixins.ProjectMixin'
 TASK_MIXIN = 'tasks.mixins.TaskMixin'
@@ -591,6 +600,7 @@ ORGANIZATION_MEMBER_MIXIN = 'organizations.mixins.OrganizationMemberMixin'
 MEMBER_PERM = 'core.api_permissions.MemberHasOwnerPermission'
 RECALCULATE_ALL_STATS = None
 GET_STORAGE_LIST = 'io_storages.functions.get_storage_list'
+STORAGE_LOAD_TASKS_JSON = 'io_storages.utils.load_tasks_json_lso'
 STORAGE_ANNOTATION_SERIALIZER = 'io_storages.serializers.StorageAnnotationSerializer'
 TASK_SERIALIZER_BULK = 'tasks.serializers.BaseTaskSerializerBulk'
 PREPROCESS_FIELD_NAME = 'data_manager.functions.preprocess_field_name'
@@ -599,6 +609,11 @@ STORAGE_PERMISSION = 'io_storages.permissions.StoragePermission'
 PROJECT_IMPORT_PERMISSION = 'projects.permissions.ProjectImportPermission'
 DELETE_TASKS_ANNOTATIONS_POSTPROCESS = None
 FEATURE_FLAGS_GET_USER_REPR = 'core.feature_flags.utils.get_user_repr'
+
+# Test factories
+ORGANIZATION_FACTORY = 'organizations.tests.factories.OrganizationFactory'
+PROJECT_FACTORY = 'projects.tests.factories.ProjectFactory'
+USER_FACTORY = 'users.tests.factories.UserFactory'
 
 
 def project_delete(project):
@@ -671,6 +686,7 @@ STORAGE_IN_PROGRESS_TIMER = float(get_env('STORAGE_IN_PROGRESS_TIMER', 5.0))
 STORAGE_EXPORT_CHUNK_SIZE = int(get_env('STORAGE_EXPORT_CHUNK_SIZE', 100))
 
 USE_NGINX_FOR_EXPORT_DOWNLOADS = get_bool_env('USE_NGINX_FOR_EXPORT_DOWNLOADS', False)
+USE_NGINX_FOR_UPLOADS = get_bool_env('USE_NGINX_FOR_UPLOADS', True)
 
 if get_env('MINIO_STORAGE_ENDPOINT') and not get_bool_env('MINIO_SKIP', False):
     CLOUD_FILE_STORAGE_ENABLED = True
@@ -765,7 +781,6 @@ if ENABLE_CSP := get_bool_env('ENABLE_CSP', True):
         "'self'",
         "'report-sample'",
         "'unsafe-inline'",
-        "'unsafe-eval'",
         'blob:',
         'browser.sentry-cdn.com',
         'https://*.googletagmanager.com',
@@ -822,3 +837,19 @@ if CI:
     }
 
 LOGOUT_REDIRECT_URL = get_env('LOGOUT_REDIRECT_URL', None)
+
+# Enable legacy tokens (useful for running with a pre-existing token via `LABEL_STUDIO_USER_TOKEN`)
+LABEL_STUDIO_ENABLE_LEGACY_API_TOKEN = get_bool_env('LABEL_STUDIO_ENABLE_LEGACY_API_TOKEN', False)
+RESOLVER_PROXY_BUFFER_SIZE = int(get_env('RESOLVER_PROXY_BUFFER_SIZE', 512 * 1024))
+RESOLVER_PROXY_TIMEOUT = int(get_env('RESOLVER_PROXY_TIMEOUT', 20))
+RESOLVER_PROXY_MAX_RANGE_SIZE = int(get_env('RESOLVER_PROXY_MAX_RANGE_SIZE', 8 * 1024 * 1024))
+RESOLVER_PROXY_GCS_DOWNLOAD_URL = get_env(
+    'RESOLVER_PROXY_GCS_DOWNLOAD_URL',
+    'https://storage.googleapis.com/download/storage/v1/b/{bucket_name}/o/{blob_name}?alt=media',
+)
+RESOLVER_PROXY_GCS_HTTP_TIMEOUT = int(get_env('RESOLVER_PROXY_GCS_HTTP_TIMEOUT', 5))
+RESOLVER_PROXY_ENABLE_ETAG_CACHE = get_bool_env('RESOLVER_PROXY_ENABLE_ETAG_CACHE', True)
+RESOLVER_PROXY_CACHE_TIMEOUT = int(get_env('RESOLVER_PROXY_CACHE_TIMEOUT', 3600))
+
+# Advanced validator for ImportStorageSerializer in enterprise
+IMPORT_STORAGE_SERIALIZER_VALIDATE = None

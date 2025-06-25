@@ -98,7 +98,7 @@ const _detect = (region) => {
     case "paragraphs":
     case "timeseriesregion": {
       const regionBbox = Geometry.getDOMBBox(region.getRegionElement());
-      const container = region.parent?.visibleNodeRef?.current;
+      const container = region.parent?.mountNodeRef?.current;
 
       if (container?.tagName === "IFRAME") {
         const iframeBbox = Geometry.getDOMBBox(container, true);
@@ -134,7 +134,8 @@ const _detect = (region) => {
     case "ellipseregion":
     case "polygonregion":
     case "keypointregion":
-    case "brushregion": {
+    case "brushregion":
+    case "bitmaskregion": {
       const bbox = region.bboxCoordsCanvas;
 
       return bbox

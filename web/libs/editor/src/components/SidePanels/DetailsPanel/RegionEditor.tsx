@@ -12,13 +12,14 @@ import {
   useMemo,
   useState,
 } from "react";
-import { Checkbox } from "@humansignal/ui";
-import { IconPropertyAngle } from "../../../assets/icons";
+import { IconPropertyAngle } from "@humansignal/icons";
+import { Checkbox, Select } from "@humansignal/ui";
 import { Block, Elem, useBEM } from "../../../utils/bem";
 import { FF_DEV_2715, isFF } from "../../../utils/feature-flags";
 import { TimeDurationControl } from "../../TimeDurationControl/TimeDurationControl";
 import { TimelineRegionEditor } from "./TimelineRegionEditor";
 import "./RegionEditor.scss";
+import type { MSTRegion } from "../../../stores/types";
 
 interface RegionEditorProps {
   region: MSTRegion;
@@ -83,7 +84,7 @@ const RegionProperties = ({ region }: RegionEditorProps) => {
   );
 };
 
-const AudioRegionProperties = ({ region }: { region: any }) => {
+const AudioRegionProperties = observer(({ region }: { region: any }) => {
   const changeStartTimeHandler = (value: number) => {
     region.setProperty("start", value);
   };
@@ -107,7 +108,7 @@ const AudioRegionProperties = ({ region }: { region: any }) => {
       />
     </Elem>
   );
-};
+});
 
 interface RegionPropertyProps {
   property: string;
@@ -189,17 +190,12 @@ const RegionProperty: FC<RegionPropertyProps> = ({ property, label, region }) =>
           onChange={(v) => onChangeHandler(Number(v))}
         />
       ) : options ? (
-        <select
+        <Select
           value={value}
-          onChange={(e) => onChangeHandler(e.target.value)}
-          className={block?.elem("select").toClassName()}
-        >
-          {options.map((value, i) => (
-            <option key={`${value}-${i}`} value={value}>
-              {value}
-            </option>
-          ))}
-        </select>
+          onChange={(val) => onChangeHandler(val)}
+          triggerClassName={block?.elem("select").toClassName()}
+          options={options}
+        />
       ) : null}
       <PropertyLabel label={label} />
     </Elem>

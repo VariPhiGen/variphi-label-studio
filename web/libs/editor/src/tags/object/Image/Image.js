@@ -1,3 +1,4 @@
+import { ff } from "@humansignal/core";
 import { inject } from "mobx-react";
 import { destroy, getRoot, getType, types } from "mobx-state-tree";
 
@@ -16,6 +17,7 @@ import ToolsManager from "../../../tools/Manager";
 import { parseValue } from "../../../utils/data";
 import {
   FF_DEV_3377,
+  FF_DEV_3391,
   FF_DEV_3793,
   FF_LSDV_4583,
   FF_LSDV_4583_6,
@@ -33,6 +35,9 @@ import { RELATIVE_STAGE_HEIGHT, RELATIVE_STAGE_WIDTH, SNAP_TO_PIXEL_MODE } from 
 import MultiItemObjectBase from "../MultiItemObjectBase";
 
 const IMAGE_PRELOAD_COUNT = 3;
+const ZOOM_INTENSITY = 0.009;
+const MIN_ZOOM = 0.1;
+const MAX_ZOOM = 100;
 
 /**
  * The `Image` tag shows an image on the page. Use for all image annotation tasks to display an image on the labeling interface.
@@ -136,6 +141,8 @@ const IMAGE_CONSTANTS = {
   keypointlabels: "keypointlabels",
   polygonlabels: "polygonlabels",
   brushlabels: "brushlabels",
+  bitmaskModel: "BitmaskModel",
+  bitmasklabels: "bitmasklabels",
   brushModel: "BrushModel",
   ellipselabels: "ellipselabels",
 };
@@ -281,6 +288,15 @@ const Model = types
       return self.zoomScale;
     },
 
+    get layerZoomScalePosition() {
+      return {
+        scaleX: self.zoomScale,
+        scaleY: self.zoomScale,
+        x: self.zoomingPositionX + self.alignmentOffset.x,
+        y: self.zoomingPositionY + self.alignmentOffset.y,
+      };
+    },
+
     get hasTools() {
       return !!self.getToolsManager().allTools()?.length;
     },
@@ -398,6 +414,7 @@ const Model = types
         if (
           item.type === IMAGE_CONSTANTS.rectanglelabels ||
           item.type === IMAGE_CONSTANTS.brushlabels ||
+          item.type === IMAGE_CONSTANTS.bitmasklabels ||
           item.type === IMAGE_CONSTANTS.ellipselabels
         ) {
           returnedControl = item;
@@ -567,7 +584,9 @@ const Model = types
       };
     },
   }))
-
+  .volatile((self) => ({
+    manager: null,
+  }))
   // actions for the tools
   .actions((self) => {
     const manager = ToolsManager.getInstance({ name: self.name });
@@ -577,18 +596,19 @@ const Model = types
       if (!self.store.task) return;
 
       const parsedValue = self.multiImage ? self.parsedValueList : self.parsedValue;
+      const idPostfix = self.annotation ? `@${self.annotation.id}` : "";
 
       if (Array.isArray(parsedValue)) {
         parsedValue.forEach((src, index) => {
           self.imageEntities.push({
-            id: `${self.name}#${index}`,
+            id: `${self.name}#${index}${idPostfix}`,
             src,
             index,
           });
         });
       } else {
         self.imageEntities.push({
-          id: `${self.name}#0`,
+          id: `${self.name}#0${idPostfix}`,
           src: parsedValue,
           index: 0,
         });
@@ -598,15 +618,18 @@ const Model = types
     }
 
     function afterAttach() {
-      if (self.selectioncontrol) manager.addTool("MoveTool", Tools.Selection.create({}, env));
+      if (ff.isActive(FF_DEV_3391) && !self.annotation) {
+        return;
+      }
+      if (self.selectioncontrol) manager.addTool("MoveTool", Tools.Selection.create({}, env), "MoveTool");
 
-      if (self.zoomcontrol) manager.addTool("ZoomPanTool", Tools.Zoom.create({}, env));
+      if (self.zoomcontrol) manager.addTool("ZoomPanTool", Tools.Zoom.create({}, env), "ZoomPanTool");
 
-      if (self.brightnesscontrol) manager.addTool("BrightnessTool", Tools.Brightness.create({}, env));
+      if (self.brightnesscontrol) manager.addTool("BrightnessTool", Tools.Brightness.create({}, env), "BrightnessTool");
 
-      if (self.contrastcontrol) manager.addTool("ContrastTool", Tools.Contrast.create({}, env));
+      if (self.contrastcontrol) manager.addTool("ContrastTool", Tools.Contrast.create({}, env), "ContrastTool");
 
-      if (self.rotatecontrol) manager.addTool("RotateTool", Tools.Rotate.create({}, env));
+      if (self.rotatecontrol) manager.addTool("RotateTool", Tools.Rotate.create({}, env), "RotateTool");
 
       createImageEntities();
     }
@@ -906,17 +929,20 @@ const Model = types
       self.resetZoomPositionToCenter();
     },
 
-    handleZoom(val, mouseRelativePos = { x: self.canvasSize.width / 2, y: self.canvasSize.height / 2 }) {
+    handleZoom(val, mouseRelativePos = { x: self.canvasSize.width / 2, y: self.canvasSize.height / 2 }, pinch = false) {
       if (val) {
         let zoomScale = self.currentZoom;
 
-        zoomScale = val > 0 ? zoomScale * self.zoomBy : zoomScale / self.zoomBy;
+        const newZoom = clamp(self.currentZoom * Math.exp(val * (pinch ? -1 : 1) * ZOOM_INTENSITY), MIN_ZOOM, MAX_ZOOM);
+        zoomScale = pinch ? newZoom : val > 0 ? zoomScale * self.zoomBy : zoomScale / self.zoomBy;
+
         if (self.negativezoom !== true && zoomScale <= 1) {
           self.setZoom(1);
           self.setZoomPosition(0, 0);
           self.updateImageAfterZoom();
           return;
         }
+
         if (zoomScale <= 1) {
           self.setZoom(zoomScale);
           self.setZoomPosition(0, 0);

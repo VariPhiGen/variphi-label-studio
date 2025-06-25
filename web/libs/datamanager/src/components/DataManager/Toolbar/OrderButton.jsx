@@ -1,5 +1,5 @@
 import { inject } from "mobx-react";
-import { FaSortAmountDown, FaSortAmountUp } from "react-icons/fa";
+import { IconSortDown, IconSortUp } from "@humansignal/icons";
 import { Button } from "../../Common/Button/Button";
 import { FieldsButton } from "../../Common/FieldsButton";
 import { Space } from "../../Common/Space/Space";
@@ -20,11 +20,14 @@ export const OrderButton = injector(({ size, ordering, view, ...rest }) => {
         <FieldsButton
           size={size}
           style={{ minWidth: 67, textAlign: "left", marginRight: -1 }}
-          title={ordering ? ordering.column?.title : "not set"}
+          title={ordering ? ordering.column?.title : "Order by"}
           onClick={(col) => view.setOrdering(col.id)}
           onReset={() => view.setOrdering(null)}
           resetTitle="Default"
           selected={ordering?.field}
+          filter={(col) => {
+            return col.orderable ?? col.original?.orderable;
+          }}
           wrapper={({ column, children }) => (
             <Space style={{ width: "100%", justifyContent: "space-between" }}>
               {children}
@@ -47,9 +50,8 @@ export const OrderButton = injector(({ size, ordering, view, ...rest }) => {
 
         <Button
           size={size}
-          style={{ color: "#595959" }}
           disabled={!!ordering === false}
-          icon={ordering?.desc ? <FaSortAmountUp /> : <FaSortAmountDown />}
+          icon={ordering?.desc ? <IconSortUp /> : <IconSortDown />}
           onClick={() => view.setOrdering(ordering?.field)}
         />
       </Button.Group>

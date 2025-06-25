@@ -18,7 +18,7 @@ from rest_framework.fields import SkipField
 from rest_framework.serializers import ModelSerializer
 from rest_framework.settings import api_settings
 from tasks.exceptions import AnnotationDuplicateError
-from tasks.models import Annotation, AnnotationDraft, Prediction, Task
+from tasks.models import Annotation, AnnotationDraft, Prediction, PredictionMeta, Task
 from tasks.validation import TaskValidator
 from users.models import User
 from users.serializers import UserSerializer
@@ -176,7 +176,10 @@ class BaseTaskSerializer(FlexFieldsModelSerializer):
 
     def validate(self, task):
         instance = self.instance if hasattr(self, 'instance') else None
-        validator = TaskValidator(self.project(), instance)
+        validator = TaskValidator(
+            self.project(task=instance),
+            instance=instance if 'data' not in task else None,
+        )
         return validator.validate(task)
 
     def to_representation(self, instance):
@@ -729,6 +732,15 @@ class TaskIDOnlySerializer(ModelSerializer):
     class Meta:
         model = Task
         fields = ['id']
+
+
+class PredictionMetaSerializer(ModelSerializer):
+    """Serializer for PredictionMeta model"""
+
+    class Meta:
+        model = PredictionMeta
+        fields = '__all__'
+        read_only_fields = ['prediction', 'failed_prediction']
 
 
 # LSE inherits this serializer

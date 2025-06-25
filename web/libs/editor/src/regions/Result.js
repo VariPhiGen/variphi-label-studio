@@ -40,12 +40,14 @@ const Result = types
       "keypoint",
       "polygon",
       "brush",
+      "bitmask",
       "ellipse",
       "magicwand",
       "rectanglelabels",
       "keypointlabels",
       "polygonlabels",
       "brushlabels",
+      "bitmasklabels",
       "ellipselabels",
       "timeserieslabels",
       "timelinelabels",
@@ -82,6 +84,7 @@ const Result = types
       brushlabels: types.maybe(types.array(types.string)),
       timeserieslabels: types.maybe(types.array(types.string)),
       timelinelabels: types.maybe(types.array(types.string)), // new one
+      bitmasklabels: types.maybe(types.array(types.string)),
       taxonomy: types.frozen(), // array of arrays of strings
       sequence: types.frozen(),
     }),
@@ -158,6 +161,24 @@ const Result = types
     get canBeSubmitted() {
       const control = self.from_name;
 
+      // Find the first node moving up in the tree with the given visibleWhen value
+      function findParentWithVisibleWhen(control, visibleWhen) {
+        let currentControl = control;
+
+        while (currentControl) {
+          if (currentControl.visiblewhen === visibleWhen) return currentControl;
+
+          try {
+            currentControl = getParent(currentControl);
+            if (!currentControl) break;
+          } catch {
+            break;
+          }
+        }
+
+        return null;
+      }
+
       if (control.perregion) {
         const label = control.whenlabelvalue;
 
@@ -201,11 +222,19 @@ const Result = types
         return true;
       };
 
-      if (control.visiblewhen === "choice-selected") {
+      // When perregion is used, we must ignore the visibility of the components and focus only on the selection
+      if (control.perregion && control.visiblewhen === "choice-selected") {
         return isChoiceSelected();
       }
+
       if (control.visiblewhen === "choice-unselected") {
         return !isChoiceSelected();
+      }
+
+      // We need to check if there is any node up in the tree with visibility restrictions so we can determine
+      // if the element is selected considering its own visibility
+      if (!control.perregion && findParentWithVisibleWhen(control, "choice-selected")) {
+        return control.isVisible === false ? false : isChoiceSelected();
       }
 
       return true;

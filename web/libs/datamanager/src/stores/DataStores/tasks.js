@@ -145,8 +145,23 @@ export const create = (columns) => {
 
         self.setLoading(taskID);
 
-        const taskData = yield self.root.apiCall("task", { taskID });
+        // Pass label stream mode context to the backend API call
+        const isLabelStream = getRoot(self).SDK?.mode === "labelstream";
+        const taskParams = { taskID };
+        if (isLabelStream) {
+          taskParams.interaction = "labelstream";
+        }
 
+        const taskData = yield self.root.apiCall("task", taskParams);
+
+        if (taskData.status === 404) {
+          self.finishLoading(taskID);
+          getRoot(self).SDK.invoke("crash", {
+            error: `Task ID: ${taskID} does not exist or is no longer available`,
+            redirect: true,
+          });
+          return null;
+        }
         const task = self.applyTaskSnapshot(taskData, taskID);
 
         if (select !== false) self.setSelected(task);

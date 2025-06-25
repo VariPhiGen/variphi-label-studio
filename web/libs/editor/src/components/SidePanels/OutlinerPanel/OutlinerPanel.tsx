@@ -5,8 +5,18 @@ import { PanelBase, type PanelProps } from "../PanelBase";
 import { OutlinerTree } from "./OutlinerTree";
 import { ViewControls } from "./ViewControls";
 import "./OutlinerPanel.scss";
-import { IconInfo } from "../../../assets/icons/outliner";
-import { FF_OUTLINER_OPTIM, isFF } from "../../../utils/feature-flags";
+import { IconInfo } from "@humansignal/icons";
+import { IconLsLabeling } from "@humansignal/ui";
+import { EmptyState } from "../Components/EmptyState";
+import { getDocsUrl } from "../../../utils/docs";
+
+// Local type definitions based on ViewControls and RegionStore
+type GroupingOptions = "manual" | "label" | "type";
+type OrderingOptions = "score" | "date";
+type Region = {
+  id: string;
+  [key: string]: any; // Allow other properties for flexibility
+};
 
 interface OutlinerPanelProps extends PanelProps {
   regions: any;
@@ -20,21 +30,17 @@ const OutlinerFFClasses: string[] = [];
 
 OutlinerFFClasses.push("ff_hide_all_regions");
 
-if (isFF(FF_OUTLINER_OPTIM)) {
-  OutlinerFFClasses.push("ff_outliner_optim");
-}
-
 const OutlinerPanelComponent: FC<OutlinerPanelProps> = ({ regions, ...props }) => {
-  const [group, setGroup] = useState();
+  const [group, setGroup] = useState<GroupingOptions>(regions.group);
   const onOrderingChange = useCallback(
-    (value) => {
+    (value: OrderingOptions) => {
       regions.setSort(value);
     },
     [regions],
   );
 
   const onGroupingChange = useCallback(
-    (value) => {
+    (value: GroupingOptions) => {
       regions.setGrouping(value);
       setGroup(value);
     },
@@ -42,7 +48,7 @@ const OutlinerPanelComponent: FC<OutlinerPanelProps> = ({ regions, ...props }) =
   );
 
   const onFilterChange = useCallback(
-    (value) => {
+    (value: Region[] | null) => {
       regions.setFilteredRegions(value);
     },
     [regions],
@@ -71,21 +77,21 @@ const OutlinerPanelComponent: FC<OutlinerPanelProps> = ({ regions, ...props }) =
 
 const OutlinerStandAlone: FC<OutlinerPanelProps> = ({ regions }) => {
   const onOrderingChange = useCallback(
-    (value) => {
+    (value: OrderingOptions) => {
       regions.setSort(value);
     },
     [regions],
   );
 
   const onGroupingChange = useCallback(
-    (value) => {
+    (value: GroupingOptions) => {
       regions.setGrouping(value);
     },
     [regions],
   );
 
   const onFilterChange = useCallback(
-    (value) => {
+    (value: Region[] | null) => {
       regions.setFilteredRegions(value);
     },
     [regions],
@@ -105,6 +111,23 @@ const OutlinerStandAlone: FC<OutlinerPanelProps> = ({ regions }) => {
     </Block>
   );
 };
+
+const OutlinerEmptyState = () => (
+  <EmptyState
+    icon={<IconLsLabeling width={24} height={24} />}
+    header="Labeled regions will appear here"
+    description={
+      <>
+        <span>
+          Start labeling and track your results
+          <br />
+          using this panel
+        </span>
+      </>
+    }
+    learnMore={{ href: getDocsUrl("guide/labeling"), text: "Learn more", testId: "regions-panel-learn-more" }}
+  />
+);
 
 const OutlinerTreeComponent: FC<OutlinerTreeComponentProps> = observer(({ regions }) => {
   const allRegionsHidden = regions?.regions?.length > 0 && regions?.filter?.length === 0;
@@ -141,7 +164,7 @@ const OutlinerTreeComponent: FC<OutlinerTreeComponentProps> = observer(({ region
           />
         </>
       ) : (
-        <Elem name="empty">Regions not added</Elem>
+        <OutlinerEmptyState />
       )}
     </>
   );

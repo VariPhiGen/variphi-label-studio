@@ -1,16 +1,12 @@
 import { observer } from "mobx-react";
 import { createContext, forwardRef, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { FaCode } from "react-icons/fa";
-import { RiCodeLine } from "react-icons/ri";
-import AutoSizer from "react-virtualized-auto-sizer";
-import { VariableSizeList } from "react-window";
-import InfiniteLoader from "react-window-infinite-loader";
 import { useSDK } from "../../../providers/SDKProvider";
 import { isDefined } from "../../../utils/utils";
-import { Button } from "../Button/Button";
 import { Icon } from "../Icon/Icon";
 import { modal } from "../Modal/Modal";
-import { Tooltip } from "../Tooltip/Tooltip";
+import { IconCode, IconGear, IconGearNewUI, IconCopyOutline } from "@humansignal/icons";
+import { AutoSizerTable, Tooltip, Button } from "@humansignal/ui";
+import { useCopyText } from "@humansignal/core/lib/hooks/useCopyText";
 import "./Table.scss";
 import { TableCheckboxCell } from "./TableCheckbox";
 import { tableCN, TableContext } from "./TableContext";
@@ -19,8 +15,7 @@ import { TableRow } from "./TableRow/TableRow";
 import { prepareColumns } from "./utils";
 import { cn } from "../../../utils/bem";
 import { FieldsButton } from "../FieldsButton";
-import { LsGear, LsGearNewUI } from "../../../assets/icons";
-import { FF_DEV_3873, FF_LOPS_E_10, FF_LOPS_E_3, isFF } from "../../../utils/feature-flags";
+import { FF_DEV_3873, FF_LOPS_E_3, isFF } from "../../../utils/feature-flags";
 
 const Decorator = (decoration) => {
   return {
@@ -58,48 +53,50 @@ export const Table = observer(
     const tableHead = useRef();
     const [colOrder, setColOrder] = useState(JSON.parse(localStorage.getItem(colOrderKey)) ?? {});
     const listRef = useRef();
-    const columns = prepareColumns(props.columns, props.hiddenColumns);
     const Decoration = useMemo(() => Decorator(decoration), [decoration]);
     const { api, type } = useSDK();
 
-    useEffect(() => {
-      localStorage.setItem(colOrderKey, JSON.stringify(colOrder));
-    }, [colOrder]);
+    const headerCheckboxCell = useCallback(() => {
+      return (
+        <TableCheckboxCell
+          checked={selectedItems.isAllSelected}
+          indeterminate={selectedItems.isIndeterminate}
+          onChange={() => props.onSelectAll()}
+          className="select-all"
+          ariaLabel={`${selectedItems.isAllSelected ? "Unselect" : "Select"} all rows`}
+        />
+      );
+    }, [props.onSelectAll, selectedItems]);
 
-    if (props.onSelectAll && props.onSelectRow) {
-      columns.unshift({
-        id: "select",
-        headerClassName: "table__select-all",
-        cellClassName: "select-row",
-        style: {
-          width: 40,
-          maxWidth: 40,
-          justifyContent: "center",
-        },
-        onClick: (e) => e.stopPropagation(),
-        Header: () => {
-          return (
-            <TableCheckboxCell
-              checked={selectedItems.isAllSelected}
-              indeterminate={selectedItems.isIndeterminate}
-              onChange={() => props.onSelectAll()}
-              className="select-all"
-              ariaLabel={`${selectedItems.isAllSelected ? "Unselect" : "Select"} all rows`}
-            />
-          );
-        },
-        Cell: ({ data }) => {
-          const isChecked = selectedItems.isSelected(data.id);
-          return (
-            <TableCheckboxCell
-              checked={isChecked}
-              onChange={() => props.onSelectRow(data.id)}
-              ariaLabel={`${isChecked ? "Unselect" : "Select"} Task ${data.id}`}
-            />
-          );
-        },
-      });
-    }
+    const rowCheckBoxCell = useCallback(
+      ({ data }) => {
+        const isChecked = selectedItems.isSelected(data.id);
+        return (
+          <TableCheckboxCell
+            checked={isChecked}
+            onChange={() => props.onSelectRow(data.id)}
+            ariaLabel={`${isChecked ? "Unselect" : "Select"} Task ${data.id}`}
+          />
+        );
+      },
+      [props.onSelectRow, selectedItems],
+    );
+
+    const columns = prepareColumns(props.columns, props.hiddenColumns);
+
+    columns.unshift({
+      id: "select",
+      headerClassName: "table__select-all",
+      cellClassName: "select-row",
+      style: {
+        width: 40,
+        maxWidth: 40,
+        justifyContent: "center",
+      },
+      onClick: (e) => e.stopPropagation(),
+      Header: headerCheckboxCell,
+      Cell: rowCheckBoxCell,
+    });
 
     columns.push({
       id: "show-source",
@@ -135,8 +132,8 @@ export const Table = observer(
         return (
           <Tooltip title="Show task source">
             <Button
-              type="link"
-              style={{ width: 32, height: 32, padding: 0 }}
+              look="string"
+              className="w-6 h-6 p-0 text-primary-content hover:text-primary-content-hover"
               onClick={() => {
                 modal({
                   title: `Source for task ${out?.id}`,
@@ -144,13 +141,7 @@ export const Table = observer(
                   body: <TaskSourceView content={out} onTaskLoad={onTaskLoad} sdkType={type} />,
                 });
               }}
-              icon={
-                isFF(FF_LOPS_E_10) ? (
-                  <Icon icon={RiCodeLine} style={{ width: 24, height: 24 }} />
-                ) : (
-                  <Icon icon={FaCode} />
-                )
-              }
+              leading={<Icon icon={IconCode} />}
             />
           </Tooltip>
         );
@@ -162,6 +153,9 @@ export const Table = observer(
         return colOrder[a.id] < colOrder[b.id] ? -1 : 1;
       });
     }
+    useEffect(() => {
+      localStorage.setItem(colOrderKey, JSON.stringify(colOrder));
+    }, [colOrder]);
 
     const contextValue = {
       columns,
@@ -299,14 +293,14 @@ export const Table = observer(
               <FieldsButton
                 className={columnsSelectorCN.elem("button-new").toString()}
                 wrapper={FieldsButton.Checkbox}
-                icon={<LsGearNewUI />}
+                icon={<IconGearNewUI />}
                 style={{ padding: "0" }}
                 tooltip={"Customize Columns"}
               />
             ) : (
               <FieldsButton
                 wrapper={FieldsButton.Checkbox}
-                icon={<LsGear />}
+                icon={<IconGear />}
                 style={{
                   padding: 0,
                   zIndex: 1000,
@@ -389,34 +383,19 @@ const StickyList = observer(
 
     return (
       <StickyListContext.Provider value={itemData}>
-        <AutoSizer className={tableCN.elem("auto-size")}>
-          {({ width, height }) => (
-            <InfiniteLoader
-              ref={listRef}
-              itemCount={totalCount}
-              loadMoreItems={loadMore}
-              isItemLoaded={isItemLoaded}
-              threshold={5}
-              minimumBatchSize={30}
-            >
-              {({ onItemsRendered, ref }) => (
-                <VariableSizeList
-                  className={tableCN.elem("virual").toString()}
-                  {...rest}
-                  ref={ref}
-                  width={width}
-                  height={height}
-                  itemData={itemData}
-                  itemSize={itemSize}
-                  onItemsRendered={onItemsRendered}
-                  initialScrollOffset={initialScrollOffset?.(height) ?? 0}
-                >
-                  {ItemWrapper}
-                </VariableSizeList>
-              )}
-            </InfiniteLoader>
-          )}
-        </AutoSizer>
+        <AutoSizerTable
+          ref={listRef}
+          totalCount={totalCount}
+          loadMore={loadMore}
+          isItemLoaded={isItemLoaded}
+          itemData={itemData}
+          itemSize={itemSize}
+          initialScrollOffset={initialScrollOffset}
+          className={tableCN.elem("auto-size").toString()}
+          {...rest}
+        >
+          {ItemWrapper}
+        </AutoSizerTable>
       </StickyListContext.Provider>
     );
   }),
@@ -466,5 +445,40 @@ const TaskSourceView = ({ content, onTaskLoad, sdkType }) => {
     });
   }, []);
 
-  return <pre>{source ? JSON.stringify(source, null, "  ") : null}</pre>;
+  const jsonString = useMemo(() => {
+    return source ? JSON.stringify(source, null, 2) : "";
+  }, [source]);
+
+  const [handleCopy, copied] = useCopyText(jsonString);
+
+  return (
+    <div
+      className="bg-neutral-surface rounded-small font-mono text-body-small leading-body-small overflow-auto max-h-[500px]"
+      style={{ position: "relative" }}
+    >
+      <div style={{ padding: "16px", paddingTop: "16px" }}>
+        <Tooltip title={copied ? "Copied!" : "Copy JSON"}>
+          <Button
+            look="string"
+            variant="neutral"
+            style={{
+              position: "absolute",
+              top: "8px",
+              right: "8px",
+              width: 32,
+              height: 32,
+              padding: 0,
+              zIndex: 10,
+              color: "var(--color-neutral-content-subtle)",
+            }}
+            onClick={handleCopy}
+            leading={<Icon icon={IconCopyOutline} style={{ color: "var(--color-neutral-content-subtle)" }} />}
+          />
+        </Tooltip>
+        <pre className="m-0 whitespace-pre-wrap break-words max-w-full" style={{ marginRight: "40px" }}>
+          {jsonString}
+        </pre>
+      </div>
+    </div>
+  );
 };

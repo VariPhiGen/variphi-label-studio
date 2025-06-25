@@ -27,8 +27,6 @@ from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from rest_framework.permissions import AllowAny, IsAuthenticated
 
-handler500 = 'core.views.custom_500'
-
 versions = collect_versions()
 open_api_info = openapi.Info(
     title='Label Studio API',
@@ -113,6 +111,7 @@ urlpatterns = [
     path('__lsa/', views.collect_metrics, name='collect_metrics'),
     re_path(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
     re_path(r'^', include('jwt_auth.urls')),
+    re_path(r'^', include('session_policy.urls')),
 ]
 
 if settings.DEBUG:

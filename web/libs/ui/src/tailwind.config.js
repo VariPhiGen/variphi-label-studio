@@ -1,34 +1,24 @@
+import tokens from "./tokens/tokens";
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
     "./apps/**/*.{js,jsx,ts,tsx}",
-    "./libs/ui/src/**/*.{js,jsx,ts,tsx}",
+    "./libs/app-common/src/**/*.{js,jsx,ts,tsx}",
     "./libs/core/src/**/*.{js,jsx,ts,tsx}",
+    "./libs/editor/src/**/*.{js,jsx,ts,tsx}",
+    "./libs/datamanager/src/**/*.{js,jsx,ts,tsx}",
+    "./libs/ui/src/**/*.{js,jsx,ts,tsx}",
     "./libs/storybook/**/*.{js,jsx,ts,tsx}",
   ],
   theme: {
     extend: {
       colors: {
+        // DO NOT USE THESE COLORS
+        // Refer to the Figma tokens instead
+        // These are values from the old tailwind.config.js and Shadcn/UI introduction
         current: "currentColor",
         transparent: "transparent",
-        stroke: "#EEEEEE",
-        strokedark: "#2D2F40",
-        hoverdark: "#252A42",
-        titlebg: "#ADFFF8",
-        titlebg2: "#FFEAC2",
-        titlebgdark: "#24598F",
-        btndark: "#292E45",
-        white: "#FFFFFF",
-        black: "#181C31",
-        blackho: "#2C3149",
-        blacksection: "#1C2136",
-        primaryho: "#37447A",
-        meta: "#20C5A8",
-        waterloo: "#757693",
-        manatee: "#999AA1",
-        alabaster: "#FBFBFB",
-        zumthor: "#EDF5FF",
-        socialicon: "#D1D8E0",
 
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -64,48 +54,20 @@ module.exports = {
           foreground: "hsl(var(--card-foreground))",
         },
 
-        // LS color space
-        lsPrimaryIcon: "#617ADA",
-        lsPrimaryContent: "#4C5FA9",
-        lsPrimaryEmphasisSubtle: "#F0F3FE",
-        lsPrimaryBackground: "#F0F3FE",
-        lsPrimaryOnBackground: "#2B3660",
-        lsSubtitle: "#6B6860",
-        lsNeutralSurface: "#F9F8F6",
-        lsNeutralBorder: "#E1DED5",
-        lsNeutralBorderSubtle: "#E1DED5",
-        lsBorderLightest: "#D4DBFB",
-        lsNeutralContent: "#262522",
-        lsNeutralContentSubtle: "#45433E",
-        lsNeutralContentSubtler: "#6B6860",
-        lsNeutralContentSubtlest: "#A49F95",
-        lsBorderSubtle: "#617ADA",
-        lsButtonBg: "#4C5FA9",
-        lsPositiveSurfaceHover: "#34988D",
-
-        // Accents
-        lsAccentMangoSubtle: "#FFEED0",
-        lsAccentMangoBold: "#EB9C14",
-        lsAccentGrapeSubtle: "#D4DBFB",
+        // Add all colors from tokens
+        ...tokens.colors,
       },
       fontSize: {
-        metatitle: ["12px", "20px"],
-        sectiontitle: ["14px", "22px"],
-        regular: ["16px", "26px"],
-        metatitle3: ["18px", "26px"],
-        metatitle2: ["20px", "32px"],
-        para2: ["22px", "35px"],
-        itemtitle: ["26px", "32px"],
-        itemtitle2: ["24px", "32px"],
-        hero: ["44px", "58px"],
-        sectiontitle3: ["44px", "55px"],
-        sectiontitle2: ["40px", "52px"],
-        sectiontitle4: ["34px", "48px"],
-        // LS styles
-        lsLabelMedium: ["16px", "24px"],
-        lsLabelSmall: ["14px", "8px"],
-        lsLabelSmaller: ["12px", "16px"],
-        lsLabelSmallest: ["11px", "16px"],
+        // Add all font sizes from tokens
+        ...tokens.typography.fontSize,
+      },
+      lineHeight: {
+        // Add all line heights from tokens
+        ...tokens.typography.lineHeight,
+      },
+      letterSpacing: {
+        // Add all letter spacings from tokens
+        ...tokens.typography.letterSpacing,
       },
       spacing: {
         4.5: "1.125rem",
@@ -152,6 +114,9 @@ module.exports = {
         67: "16.75rem",
         67.5: "16.875rem",
         90: "22.5rem",
+
+        // Add all spacing from tokens
+        ...tokens.spacing,
       },
       maxWidth: {
         "c-1390": "86.875rem",
@@ -190,6 +155,15 @@ module.exports = {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+
+        // Add all border radii from tokens
+        ...tokens.cornerRadius,
+      },
+      backgroundPosition: {
+        "shimmer-start": "left -2em top 0",
+      },
+      backgroundSize: {
+        "shimmer-size": "2em 100%",
       },
       keyframes: {
         line: {
@@ -204,6 +178,10 @@ module.exports = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        shimmer: {
+          from: { "background-position": "left -2em top 0" },
+          to: { "background-position": "right -2em top 0" },
+        },
       },
       animation: {
         line1: "line 3s linear infinite",
@@ -211,11 +189,15 @@ module.exports = {
         line3: "line 9s linear infinite",
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        shimmer: "shimmer 1.3s ease infinite",
       },
     },
   },
   corePlugins: {
     preflight: true,
   },
-  plugins: [],
+  plugins: [
+    // ...
+    require("tailwind-scrollbar"),
+  ],
 };
